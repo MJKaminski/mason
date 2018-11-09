@@ -1,4 +1,5 @@
-*.jar
+mason/target/*jar
+contrib/geomason/target/*jar
 *.class
 *.aux
 *.idx
