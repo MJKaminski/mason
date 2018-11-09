@@ -167,7 +167,7 @@ public class Console extends JFrame implements Controller
         }
 
     /** Returns icons for a given filename, such as "NotPlaying.png". A utility function. */
-    static ImageIcon iconFor(String name)
+    public static ImageIcon iconFor(String name)
         {
         return new ImageIcon(Console.class.getResource(name));
         }
