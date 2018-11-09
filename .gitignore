@@ -1,0 +1,7 @@
+*.jar
+*.class
+*.aux
+*.idx
+*.log
+*.out
+*.toc
