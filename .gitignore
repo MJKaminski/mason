@@ -1,9 +1,10 @@
-*.jar
+mason/target/
+contrib/geomason/target/
+dependency-reduced-pom.xml
 *.class
 *.aux
 *.idx
 *.log
 *.out
 *.toc
-mason/target/
-dependency-reduced-pom.xml
+
