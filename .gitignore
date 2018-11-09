@@ -1,5 +1,7 @@
 mason/target/*jar
 contrib/geomason/target/*jar
+mason/target/dependency/*jar
+contrib/geomason/target/depedency/*jar
 *.class
 *.aux
 *.idx
