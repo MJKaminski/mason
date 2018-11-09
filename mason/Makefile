@@ -4,16 +4,16 @@
 #### Relevant Stuff:
 #### To see all your make options:  type   make help
 #### To add flags (like -O) to javac:  change the FLAGS variable below
-LIBS=`function join() { local IFS=$$1; shift; echo "$$*"; }; join ":" library/* `
-CLASSROOT = target/classes
-FLAGS = -target 1.8 -source 1.8 -g -d ${CLASSROOT} -nowarn -cp ${LIBS}:$$CLASSPATH
-JAVAC = mpijavac ${FLAGS}
-VERSION = 19
 
+JAVAC = javac ${FLAGS}
+
+CLASSROOT = target/classes
+FLAGS = -target 1.8 -source 1.8 -g -nowarn -d ${CLASSROOT}
+
+VERSION = 19
 
 # Main java files, not including the 3D stuff
 SRCS = \
-ec/util/*.java \
 sim/app/heatbugs/*.java\
 sim/app/dheatbugs/*.java\
 sim/app/hexabugs/*.java \
@@ -60,7 +60,8 @@ sim/portrayal/grid/*.java \
 sim/portrayal/continuous/*.java \
 sim/portrayal/network/*.java \
 sim/portrayal/simple/*.java \
-sim/portrayal/inspector/*.java 
+sim/portrayal/inspector/*.java \
+ec/util/*.java \
 
 
 # The additional 3D java files
@@ -83,29 +84,28 @@ sim/portrayal3d/grid/*.java \
 sim/portrayal3d/grid/quad/*.java \
 sim/portrayal3d/continuous/*.java \
 sim/portrayal3d/network/*.java \
-sim/display3d/*.java  \
+sim/display3d/*.java \
 
-RESOURCE=src/main/resources/
-SRC=src/main/java/
-DIRS=$(addprefix $(SRC), $(SRCS))
-3DDIRS=$(addprefix $(SRC), $(3DSRCS))
+
+RSRCROOT=src/main/resources/
+SRCROOT=src/main/java/
+DIRS=$(addprefix $(SRCROOT)/, $(SRCS))
+3DDIRS=$(addprefix $(SRCROOT)/, $(3DSRCS))
 
 # Make the main MASON code, not including 3D code
-all: SHELL=/bin/bash
 all:
 	@ echo This makes the 2D MASON code.
 	@ echo To learn about other options, type 'make help'
-	@ echo 
+	@ echo
 	mkdir -p ${CLASSROOT}
 	${JAVAC} ${DIRS}
-	tar -C ${RESOURCE} -c sim ec | tar -C ${SRC} -x
+	tar -C ${RSRCROOT} -c sim ec | tar -C ${CLASSROOT} -x # Hack to combine resources with class files
 
 # Make the main MASON code AND the 3D code
-3d: SHELL=/bin/bash
 3d:
 	mkdir -p ${CLASSROOT}
 	${JAVAC} ${DIRS} ${3DDIRS}
-	tar -C ${RESOURCE} -c sim ec | tar -C ${SRC} -x
+	tar -C ${RSRCROOT} -c sim ec | tar -C ${CLASSROOT} -x # Hack to combine resources with class files
 
 
 # Delete all jmf gunk, checkpoints, backup emacs gunk classfiles,
@@ -117,41 +117,36 @@ clean:
 	find . -name "*.checkpoint" -exec rm -f {} \;
 	find . -name "*.java*~" -exec rm -f {} \;
 	find . -name ".#*" -exec rm -rf {} \;
-	rm -rf target/*.jar docs/classdocs/resources docs/classdocs/ec docs/classdocs/src/main/java/sim docs/classdocs/*.html docs/classdocs/*.css docs/classdocs/package*
+	rm -rf target/*.jar docs/classdocs/resources docs/classdocs/ec docs/classdocs/sim docs/classdocs/*.html docs/classdocs/*.css docs/classdocs/package*
 	rm -rf ${CLASSROOT}
-
+	rm -rf target/
 
 # Build the class docs.  They're located in docs/classdocs
 doc:
-	javadoc -classpath . -protected -d docs/classdocs sim.display sim.engine sim.util sim.util.gui sim.util.media sim.util.media.chart sim.field sim.field.grid sim.field.continuous sim.field.network sim.portrayal sim.portrayal.grid sim.portrayal.continuous sim.portrayal.network sim.portrayal.simple sim.portrayal3d sim.portrayal3d.grid sim.portrayal3d.continuous sim.portrayal3d.simple sim.portrayal3d.grid.quad sim.display3d sim.util.distribution
+	javadoc -classpath . -protected -d docs/classdocs sim.display sim.engine sim.util sim.util.gui sim.util.media sim.util.media.chart sim.field sim.field.grid sim.field.continuous sim.field.network sim.portrayal sim.portrayal.grid sim.portrayal.continuous sim.portrayal.network sim.portrayal.simple ec.util sim.portrayal3d sim.portrayal3d.grid sim.portrayal3d.continuous sim.portrayal3d.simple sim.portrayal3d.grid.quad sim.display3d sim.util.distribution
 
 docs: doc
 
-# Build an applet jar file.  Note this collects ALL .class, .png, .jpg, index.html, and src/main/java/simulation.classes
+# Build an applet jar file.  Note this collects ALL .class, .png, .jpg, index.html, and simulation.classes
 # files.  you'll probably want to strip this down some.
-jar: SHELL=/bin/bash
 jar: 3d
 	touch /tmp/manifest.add
 	rm /tmp/manifest.add
 	echo "Main-Class: sim.display.Console" > /tmp/manifest.add
-	#jar -cvfm jar/mason.${VERSION}.jar /tmp/manifest.add  `find library -name "*.jar"` `find . -name "*.class"` `find src/main/java/sim -name "*.jpg"` `find src/main/java/sim -name "*.png"` `find src/main/java/sim -name "*.pbm"` `find src/main/java/sim -name "index.html"` src/main/java/sim/display/src/main/java/simulation.classes src/main/java/sim/portrayal/inspector/propertyinspector.classes
-	jar -cvfm target/mason.${VERSION}.jar /tmp/manifest.add library docs src start
-	#jar uf target/mason.${VERSION}.jar /tmp/manifest.add -C ${CLASSROOT}
-	rm /tmp/manifest.add
-
+	jar -cvfm target/mason.${VERSION}.jar /tmp/manifest.add -C ${CLASSROOT} .
 
 # Build a distribution.  Cleans, builds 3d, then builds docs, then
 # removes SVN directories
 dist: clean 3d indent doc jar
-	echo If the version is being updated, change it here:
-	echo "1. sim.engine.SimState.version()"
-	echo "2. manual.tex frontmatter (including copyright year)"
-	echo "3. Makefile VERSION variable"
+	@ echo If the version is being updated, change it here:
+	@ echo "1. sim.engine.SimState.version()"
+	@ echo "2. manual.tex frontmatter (including copyright year)"
+	@ echo "3. Makefile VERSION variable"
 	touch TODO
 	rm TODO
 	find . -name ".svn" -exec rm -rf {} \;
-	echo "If there were SVN directories, expect this to end in an error."
-	echo "Don't worry about it, things are still fine."
+	@ echo "If there were SVN directories, expect this to end in an error."
+	@ echo "Don't worry about it, things are still fine."
 
 
 # Indent to your preferred brace format using emacs.  MASON's default
@@ -159,7 +154,7 @@ dist: clean 3d indent doc jar
 # Anyway, beware that this is quite slow.  But it works!
 indent: 
 	touch ${HOME}/.emacs
-	find ${SRC} -name "*.java" -print -exec emacs --batch --load ~/.emacs --eval='(progn (find-file "{}") (mark-whole-buffer) (setq indent-tabs-mode nil) (untabify (point-min) (point-max)) (indent-region (point-min) (point-max) nil) (save-buffer))' \;
+	find ${SRCROOT} -name "*.java" -print -exec emacs --batch --load ~/.emacs --eval='(progn (find-file "{}") (mark-whole-buffer) (setq indent-tabs-mode nil) (untabify (point-min) (point-max)) (indent-region (point-min) (point-max) nil) (save-buffer))' \;
 
 
 # Print a help message
