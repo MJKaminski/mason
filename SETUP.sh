@@ -8,3 +8,4 @@ cd contrib/geomason
 ./SETUP.sh
 mvn package
 mvn install
+cd ..
