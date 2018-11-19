@@ -4,8 +4,8 @@
 #### Relevant Stuff:
 #### To see all your make options:  type   make help
 #### To add flags (like -O) to javac:  change the FLAGS variable below
-
-JAVAC = javac ${FLAGS}
+CC = javac
+JAVAC = ${CC} ${FLAGS}
 
 CLASSROOT = target/classes
 FLAGS = -target 1.8 -source 1.8 -g -nowarn -d ${CLASSROOT}

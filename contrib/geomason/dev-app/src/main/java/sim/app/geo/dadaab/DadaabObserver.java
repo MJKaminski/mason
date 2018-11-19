@@ -16,7 +16,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import sim.field.grid.*;
 
-import net.sf.csv4j.CSVWriter;
+//import net.sf.csv4j.CSVWriter;
+import com.opencsv.CSVWriter;
 import sim.engine.SimState;
 import sim.engine.Steppable;
 import sim.io.geo.ArcInfoASCGridExporter;
