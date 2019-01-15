@@ -49,6 +49,7 @@ sim/util/media/*.java \
 sim/util/media/chart/*.java \
 sim/util/gui/*.java \
 sim/util/distribution/*.java \
+sim/util/sweep/*.java \
 sim/field/*.java \
 sim/field/grid/*.java \
 sim/field/continuous/*.java \
@@ -86,6 +87,11 @@ sim/portrayal3d/network/*.java \
 sim/display3d/*.java \
 
 
+# EC Example java files
+ECDIRS = \
+sim/app/tutorial1and2/ec/*.java \
+
+
 # Make the main MASON code, not including 3D code
 all: SHELL=/bin/bash
 all:
@@ -99,6 +105,9 @@ all:
 3d:
 	${JAVAC} ${DIRS} ${3DDIRS}
 
+# Make the EC Demo
+ec:
+	${JAVAC} ${DIRS} ${3DDIRS}
 
 # Delete all jmf gunk, checkpoints, backup emacs gunk classfiles,
 # documentation, and odd MacOS X poops
@@ -121,7 +130,7 @@ docs: doc
 # Build an applet jar file.  Note this collects ALL .class, .png, .jpg, index.html, and simulation.classes
 # files.  you'll probably want to strip this down some.
 jar: SHELL=/bin/bash
-jar: 3d
+jar: 3d ec
 	touch /tmp/manifest.add
 	rm /tmp/manifest.add
 	echo "Main-Class: sim.display.Console" > /tmp/manifest.add
@@ -132,7 +141,7 @@ jar: 3d
 
 # Build a distribution.  Cleans, builds 3d, then builds docs, then
 # removes SVN directories
-dist: clean 3d indent doc jar
+dist: clean 3d ec indent doc jar
 	@ echo If the version is being updated, change it here:
 	@ echo "1. sim.engine.SimState.version()"
 	@ echo "2. manual.tex frontmatter (including copyright year)"
@@ -159,6 +168,7 @@ help:
 	@ echo "make          Builds the model core, utilities, and 2D code/apps only"
 	@ echo "make all        (Same thing)"
 	@ echo "make 3d       Builds the model core, utilities, and both 2D and 3D code/apps"
+	@ echo "make ec       Builds the model core, utilities, and the EC example"
 	@ echo "make docs     Builds the class documentation, found in docs/classsdocs"
 	@ echo "make doc        (Same thing)"
 	@ echo "make clean    Cleans out all classfiles, checkpoints, and various gunk"
