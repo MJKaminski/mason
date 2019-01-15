@@ -1,0 +1,6 @@
+#!/bin/bash
+
+cd ~/iCloud/Documents/Projects/mason-research
+make
+cd ~/iCloud/Documents/Projects/mason-research/sim/app/jbox2d/testtwo
+make run

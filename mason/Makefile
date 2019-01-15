@@ -5,7 +5,7 @@
 #### To see all your make options:  type   make help
 #### To add flags (like -O) to javac:  change the FLAGS variable below
 LIBS=`function join() { local IFS=$$1; shift; echo "$$*"; }; join ":" ../library/* `
-FLAGS = -target 1.8 -source 1.8 -g -nowarn -cp ${LIBS}
+FLAGS = -target 1.8 -source 1.8 -g -cp ${LIBS} 
 JAVAC = javac ${FLAGS}
 BUILDDIR=$$(pwd)
 VERSION = 19
@@ -42,6 +42,13 @@ sim/app/wcss/tutorial10/*.java \
 sim/app/wcss/tutorial11/*.java \
 sim/app/wcss/tutorial12/*.java \
 sim/app/wcss/tutorial13/*.java \
+sim/app/jbox2d/blobtest/*.java \
+sim/app/jbox2d/charactercollision/*.java \
+sim/app/jbox2d/dominotower/*.java \
+sim/app/jbox2d/pyramidtest/*.java \
+sim/app/flockbotsim/api/*.java \
+sim/app/flockbotsim/jbox2d/*.java \
+sim/app/flockbotsim/*.java \
 sim/display/*.java \
 sim/engine/*.java \
 sim/util/*.java \
