@@ -28,6 +28,10 @@ public class FlockbotSim extends SimState {
     private JBox2DStep step;
     protected double width;
     protected double height;
+    /*
+     * Setup the simulation and have the factory start making objects to add to the simulation.
+     *
+     */
 
     public FlockbotSim(long seed) {
         super(seed);

@@ -5,6 +5,10 @@ import java.net.*;
 
 public interface FlockBot
 {
+    /*
+     * To make a Flockbot, make sure you implement it. 
+     * Here's all the stuff you need to be conformant to standard flockbot API.
+     */
   ///// Print statements for debugging
   public static final boolean _DEBUG = false;
 

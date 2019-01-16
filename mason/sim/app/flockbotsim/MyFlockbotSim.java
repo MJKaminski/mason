@@ -8,6 +8,10 @@ import sim.app.flockbotsim.jbox2d.*;
 import sim.app.flockbotsim.api.*;
 
 public class MyFlockbotSim extends FlockbotSim {
+    /*
+     * Sample FlockbotSim
+     *
+     */
      public MyFlockbotSim(long seed) {
           // set world size
           super(seed, 100, 100);

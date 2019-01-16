@@ -23,6 +23,10 @@ import java.util.*;
 public class LineObject extends JBox2DObject
 {
     private double size;
+    /*
+     * This is Line physics and calculus. Is complicate. Basically collision detection.
+     *
+     */
 
     public LineObject(Body body, Continuous2D field, HashMap map, double size) {
         super(body, field, map);

@@ -9,6 +9,10 @@ import org.jbox2d.dynamics.*;
 public class MasonFlockbot extends FlockbotObject implements FlockBot {
      private FlockbotProgram program;
      private long msUntilWake = 0;
+     /*
+      * A sample implementation on how a particular flockbot could be implemented.
+      * This is a very simple mechanism.
+      */
 
      public MasonFlockbot(Body body, Continuous2D field, ArrayList<LineObject> walls, HashMap map, FlockbotProgram program) {
           super(body, field, walls, map);

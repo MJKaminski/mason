@@ -17,6 +17,11 @@ public class FlockbotFactory {
     private World world;
     private Continuous2D con2D;
     private ArrayList<LineObject> walls;
+    /*
+     * Factory pattern
+     * Despite what this says, it actually manufactures Walls, Cans, Boxes, and of course-- Flockbots.
+     * This is more of a translation layer from the logic of the objects to its actual representation in Box2D.
+     */
 
     public FlockbotFactory(World world, Continuous2D con2D) {
         this.world = world;

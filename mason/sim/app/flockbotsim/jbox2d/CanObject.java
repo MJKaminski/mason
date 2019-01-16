@@ -22,6 +22,10 @@ import java.util.*;
 
 public class CanObject extends JBox2DObject
 {
+    /*
+     * Make Can! But real. In the matrix.
+     *
+     */
     public CanObject(Body body, Continuous2D field, HashMap map) {
         super(body, field, map);
     }

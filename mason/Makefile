@@ -5,7 +5,7 @@
 #### To see all your make options:  type   make help
 #### To add flags (like -O) to javac:  change the FLAGS variable below
 LIBS=`function join() { local IFS=$$1; shift; echo "$$*"; }; join ":" ../library/* `
-FLAGS = -target 1.8 -source 1.8 -g -cp ${LIBS} 
+FLAGS = -target 1.8 -source 1.8 -g -cp ${LIBS} -nowarn
 JAVAC = javac ${FLAGS}
 BUILDDIR=$$(pwd)
 VERSION = 19

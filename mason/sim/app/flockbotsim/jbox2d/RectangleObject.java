@@ -25,6 +25,10 @@ public class RectangleObject extends JBox2DObject
     private double width;
     private double height;
     // rotation = getBody().getAngle()
+    /*
+     * Rectangle Physics.
+     *
+     */
     public RectangleObject(Body body, Continuous2D field, double width, double height) {
         super(body, field, true);
         this.width = width;

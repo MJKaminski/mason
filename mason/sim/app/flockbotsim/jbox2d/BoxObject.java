@@ -22,6 +22,9 @@ import java.util.*;
 
 public class BoxObject extends JBox2DObject
 {
+    /*
+     * Make a box for real! In the JBox
+     */
     public BoxObject(Body body, Continuous2D field, HashMap map) 
     	{
         super(body, field, map);

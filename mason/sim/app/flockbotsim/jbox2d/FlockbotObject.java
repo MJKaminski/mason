@@ -24,6 +24,9 @@ import java.util.*;
 
 public class FlockbotObject extends RobotObject
 {
+    /*
+     * Physics for how Flockbots can interact with other objects in space
+     */
      enum State {
           MOVING, BLOCKED
      }

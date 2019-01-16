@@ -20,6 +20,9 @@ import sim.engine.*;
 
 public abstract class RobotObject extends JBox2DObject
 {
+    /*
+     * A generalized class for implementing dynamic agents.
+     */
     public RobotObject(Body body, Continuous2D field) {
     	this(body, field, false);
     }
