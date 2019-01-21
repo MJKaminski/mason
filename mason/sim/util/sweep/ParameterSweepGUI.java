@@ -168,7 +168,7 @@ public class ParameterSweepGUI extends JPanel
             public void actionPerformed(ActionEvent e) 
                 {
                 propList.getSelectedValue().everyStep=everyStep.isSelected();
-                nStep.setEditable(true);
+                nStep.setEditable(!nStep.isEditable());
                 propList.revalidate();
                 propList.repaint();
                 }
