@@ -4,15 +4,16 @@ import sim.engine.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.zip.GZIPOutputStream;
 import sim.util.*;
 import ec.util.*;
 
 public class ParameterSweep 
     {
     // the master file 
-    PrintWriter writer;
-    Object[] writerLock = new Object[0];
-    public void println(String val) { synchronized(writerLock) { writer.println(val); } }
+    PrintWriter printWriter;
+    Object[] printWriterLock = new Object[0];
+    public void println(String val) { synchronized(printWriterLock) { printWriter.println(val); } }
 
     // Value Bounds for independent variables
     double minValues[];
@@ -106,7 +107,7 @@ public class ParameterSweep
                 e.printStackTrace();
                 }
             }
-        writer.close();
+        printWriter.close();
         }
     
     //takes a parameter src.main.java.sim.util.sweep and populates it based on a parameter database
@@ -131,7 +132,16 @@ public class ParameterSweep
 
         try
             {
-            writer = new PrintWriter(new FileWriter(((String)(pd.getStringWithDefault(new Parameter("out"), null, "bad")))));
+            String fileName = pd.getStringWithDefault(new Parameter("out"), null, "bad");
+            if (!fileName.substring(fileName.length()-4, fileName.length()-1).equalsIgnoreCase(".gz"))
+                {
+                    printWriter = new PrintWriter(new FileWriter(((String)(pd.getStringWithDefault(new Parameter("out"), null, "bad")))));
+                }
+            else 
+                {   
+                    GZIPOutputStream gzip = new GZIPOutputStream(new FileOutputStream(new File(fileName)));
+                    printWriter = new PrintWriter(new OutputStreamWriter(gzip));
+                }
             }
         catch (IOException e)
             {

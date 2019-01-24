@@ -39,18 +39,19 @@ public class ParameterSweepGUI extends JPanel
     int numThreads=1;
     
     JButton clear;
-    JCheckBox minValue = new JCheckBox("record min value");
-    JCheckBox maxValue = new JCheckBox("record max value");
-    JCheckBox avgValue = new JCheckBox("record avg value");
-    JCheckBox everyStep = new JCheckBox("record every n steps", false);
+    JCheckBox minValue = new JCheckBox("Record Min Value");
+    JCheckBox maxValue = new JCheckBox("Record Max Value");
+    JCheckBox avgValue = new JCheckBox("Record Avg Value");
+    JCheckBox everyStep = new JCheckBox("Record Every N Steps", false);
     JTextField nStep = new JTextField("0");
-    JLabel nStepsLabel = new JLabel("n=");
+    JLabel nStepsLabel = new JLabel("N =");
 
     PropertyField maxStepsField;
     PropertyField repeatsField;
     PropertyField seedField;
     // JFileChooser fileField;
     PropertyField threadsField;
+    JCheckBox compressOutput = new JCheckBox();
 
     /**
      * The current index of the topmost element
@@ -109,7 +110,8 @@ public class ParameterSweepGUI extends JPanel
 
         generateProperties();
         // making sure that recording each step in the sweep is enabled by default, and that users cannot set a number of steps to skip without first unchecking "everystep"
-        nStep.setEditable(false);
+        nStep.setEnabled(false);
+        nStepsLabel.setEnabled(false);
 
         ListSelectionListener listener = new ListSelectionListener() 
             {
@@ -168,7 +170,8 @@ public class ParameterSweepGUI extends JPanel
             public void actionPerformed(ActionEvent e) 
                 {
                 propList.getSelectedValue().everyStep=everyStep.isSelected();
-                nStep.setEditable(!nStep.isEditable());
+                nStep.setEnabled(!nStep.isEnabled());
+                nStepsLabel.setEnabled(!nStepsLabel.isEnabled());
                 propList.revalidate();
                 propList.repaint();
                 }
@@ -215,7 +218,7 @@ public class ParameterSweepGUI extends JPanel
                         {
                         public boolean accept(File dir, String name)
                             {
-                            return name.endsWith(".csv");
+                            return ((!compressOutput.isSelected()) ? name.endsWith(".csv") : name.endsWith(".csv.gz"));
                             }
                         });
                         
@@ -407,6 +410,7 @@ public class ParameterSweepGUI extends JPanel
         globalSettings.addLabelled("Num Threads: ", threadsField);
         globalSettings.addLabelled("Max Steps: ", maxStepsField);
         globalSettings.addLabelled("Initial Seed: ", seedField);
+        globalSettings.addLabelled("Compress Output File?", compressOutput);
 
         JPanel p = new JPanel();
         p.setLayout(new BorderLayout());
