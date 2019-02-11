@@ -31,7 +31,7 @@ public class PropertySettings
         this.index = index;
         }
     
-    public static ParameterDatabase convertToDatabase(ListModel propertySettings, int simSteps, String path, int repeats, int threads)
+    public static ParameterDatabase convertToDatabase(ListModel propertySettings, int simSteps, String path, int repeats, int threads, int seed)
         {
         StringBuilder min = new StringBuilder("");
         StringBuilder max= new StringBuilder("");
@@ -66,16 +66,12 @@ public class PropertySettings
         pd.set(new Parameter("out"),path);
         pd.set(new Parameter("numRepeats"),repeats+"");
         pd.set(new Parameter("threads"),threads+"");
-        System.err.println("steps is " + steps.toString().substring(0,steps.toString().length()));
-        System.err.println("min is " + min.toString().substring(0,min.toString().length()));
-        System.err.println("max is " + max.toString().substring(0,max.toString().length()));
-        System.err.println("independent names"  + independent.toString().substring(0,independent.toString().length()));
-
+        pd.set(new Parameter("seed"), seed+"");
         return pd;
 
         }
 
-    public static void addParameter(StringBuilder min, StringBuilder max, StringBuilder avg, StringBuilder recordMax, StringBuilder recordMin, StringBuilder independent, StringBuilder dependent, StringBuilder steps, StringBuilder everyStep, StringBuilder nStep, PropertySettings param) 
+    public static void addParameter(StringBuilder min, StringBuilder max, StringBuilder avg, StringBuilder recordMax, StringBuilder recordMin, StringBuilder independent, StringBuilder dependent, StringBuilder steps, StringBuilder everyStep, StringBuilder nStep, PropertySettings param)
         {
         if(param.amDependent)
             {

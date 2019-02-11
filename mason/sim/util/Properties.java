@@ -93,7 +93,6 @@ public abstract class Properties implements java.io.Serializable
         	object = ((sim.util.Proxiable)object).propertiesProxy();
         else if (allowProxy && object instanceof sim.util.Propertied)
             return ((sim.util.Propertied)(object)).properties();
-            
         Class c = object.getClass();
         if (c.isArray()) return new CollectionProperties(object);
         else if (expandCollections && (Collection.class.isAssignableFrom(c) ||

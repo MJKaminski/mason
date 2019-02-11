@@ -495,8 +495,8 @@ public class SimpleProperties extends Properties implements java.io.Serializable
                     e1.printStackTrace();  // try again though
                     }
                 }
+       		sortAlphabetically();
             }
-        sortAlphabetically();
         }
     
     /* If it exists, returns a method of the form 'public boolean hideFoo() { ...}'.  In this method the developer can declare
@@ -633,12 +633,13 @@ public class SimpleProperties extends Properties implements java.io.Serializable
             }
         }
     
-    public boolean isVolatile() { if (auxillary!=null) return auxillary.isVolatile(); return false; }
+    public boolean isVolatile() { if (auxillary!=null) return auxillary.isVolatile(); else return false; }
 
     /** Returns the number of properties discovered */
     public int numProperties()
         {
         if (auxillary!=null) return auxillary.numProperties();
+        if (object == null) return 0;
         return getMethods.size();
         }
 
@@ -716,6 +717,7 @@ public class SimpleProperties extends Properties implements java.io.Serializable
     protected Object _setValue(int index, Object value)
         {
         if (auxillary!=null) return auxillary.setValue(index,value);  // I think this is right
+        if (object == null) return null;
         try
             {
             if (setMethods.get(index) == null) return null;
@@ -794,7 +796,9 @@ public class SimpleProperties extends Properties implements java.io.Serializable
         {
         if (auxillary != null)
             throw new RuntimeException("Properties may not be reduced if the SimpleProperties has an auxillary.");
-                
+        if (object == null)
+            throw new RuntimeException("Properties for a Null object may not be reduced.");
+            
         SimpleProperties props = new SimpleProperties()
             {
             public boolean isVolatile() { return SimpleProperties.this.isVolatile(); }

@@ -23,6 +23,7 @@ import javax.swing.event.*;
 import java.awt.event.*;
 import java.io.*;
 import java.util.*;
+import java.time.*;
 
 
 public class ParameterSweepGUI extends JPanel
@@ -34,8 +35,6 @@ public class ParameterSweepGUI extends JPanel
 
     int numMaxSteps = 10000;
     int numRepeats = 1;
-    long seed;
-    String filePath;
     int numThreads=1;
     
     JButton clear;
@@ -62,15 +61,15 @@ public class ParameterSweepGUI extends JPanel
      */
     int count = 0;
     int currentIndex = 0;
-    String listName;  // used internally
-    JLabel numElements = null;
-    Box startField = null;
+    
+    String listName; 
+    JLabel numElements;
+    Box startField;
     Thread runThread;
     public JPanel propPanel = new JPanel();
-    Thread sweeperThread =null;
+    Thread sweeperThread;
     ParameterSweep sweeper = null;
-
-    JList<PropertySettings> propList = null;
+    JList<PropertySettings> propList;
     private ArrayList<Component> currentComponents = new ArrayList<Component>();
 
     DefaultListModel<PropertySettings> propertySettingsList;
@@ -81,17 +80,17 @@ public class ParameterSweepGUI extends JPanel
 
     public ParameterSweepGUI(sim.util.Properties properties, final GUIState state, String name) 
         {
+        clear = new JButton("Reset Params");
+        final JButton run = new JButton(sim.display.Console.iconFor("NotPlaying.png"));
+        final JButton stop = new JButton(sim.display.Console.iconFor("NotStopped.png"));
         setLayout(new BorderLayout());
-        add(split, BorderLayout.CENTER);
-                
+        add(split, BorderLayout.CENTER); 
         split.setResizeWeight(.45);
-        //split.setDividerLocation(60);
-
         propPanel.setLayout(new BorderLayout());
-
-        numElements = new JLabel();
-        this.state = state;
         listName = name;
+        numElements = new JLabel();
+
+        this.state = state;
         this.properties = properties;
 
         propList = new JList<PropertySettings>();
@@ -107,7 +106,7 @@ public class ParameterSweepGUI extends JPanel
         propList.setModel(propertySettingsList);
         propList.setVisibleRowCount(10);
 
-
+        updateSeed(getNewSeed(), 0);
         generateProperties();
         // making sure that recording each step in the sweep is enabled by default, and that users cannot set a number of steps to skip without first unchecking "everystep"
         nStep.setEnabled(false);
@@ -126,11 +125,26 @@ public class ParameterSweepGUI extends JPanel
                 PropertySettings currentProp = propList.getSelectedValue();
                 if(currentProp!=null) 
                     {
+                    updatePropertySettingsUI(currentProp.index);
                     updateParameters(currentProp);
                     }
                 }
             };
+        propList.getSelectionModel().addListSelectionListener(listener);
+        //show the first item in the list's settings by default
+        propList.getSelectionModel().getMaxSelectionIndex();
+        split.setTopComponent(new JScrollPane(propList));
+        String align = BorderLayout.AFTER_LAST_LINE;
+
+        run.setPressedIcon(sim.display.Console.iconFor("Playing.png"));
+        stop.setPressedIcon(sim.display.Console.iconFor("Stopped.png"));
         
+        run.setBorderPainted(false);
+        run.setContentAreaFilled(false);
+        run.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        stop.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        stop.setBorderPainted(false);
+        stop.setContentAreaFilled(false);
         avgValue.addActionListener(new ActionListener() 
             {
             @Override
@@ -186,94 +200,8 @@ public class ParameterSweepGUI extends JPanel
                 propList.repaint();
                 }
             });
-        
-        propList.getSelectionModel().addListSelectionListener(listener);
-        //show the first item in the list's settings by default
-
-        propList.getSelectionModel().getMaxSelectionIndex();
-
-        split.setTopComponent(new JScrollPane(propList));
-
-        String align = BorderLayout.AFTER_LAST_LINE;
-
-        final JButton run = new JButton(sim.display.Console.iconFor("NotPlaying.png"));
-        run.setPressedIcon(sim.display.Console.iconFor("Playing.png"));
-        final JButton stop = new JButton(sim.display.Console.iconFor("NotStopped.png"));
-        stop.setPressedIcon(sim.display.Console.iconFor("Stopped.png"));
-        
-        run.addActionListener(new ActionListener() 
-            {
-            public void actionPerformed(ActionEvent e) 
-                {
-                try 
-                    {
-                    if(!isValidConfiguration())
-                        {
-                        JOptionPane.showMessageDialog(null,"You need to have both an independent and a dependent variable set to run");
-                        return;
-                        }
-                    
-                    FileDialog dialog = new FileDialog((Frame)null, "Save Results to File...", FileDialog.SAVE);
-                    dialog.setFilenameFilter(new FilenameFilter()
-                        {
-                        public boolean accept(File dir, String name)
-                            {
-                            return ((!compressOutput.isSelected()) ? name.endsWith(".csv") : name.endsWith(".csv.gz"));
-                            }
-                        });
-                        
-                    dialog.setVisible(true);
-                    String filename = dialog.getFile();
-                    String directory = dialog.getDirectory();
-                    if (filename == null)
-                        return;
-                        
-                    try 
-                        { 
-                        filePath = new File(new File(directory), filename).getCanonicalPath();
-                        }
-                    catch (IOException ex)
-                        {
-                        ex.printStackTrace();
-                        return;
-                        }
-                    
-                    run.setIcon(sim.display.Console.iconFor("Playing.png"));
-                    stop.setIcon(sim.display.Console.iconFor("NotStopped.png"));
-                    final ParameterDatabase pd = PropertySettings.convertToDatabase(propList.getModel(),numMaxSteps,filePath,Integer.parseInt(repeatsField.getValue()),Integer.parseInt(threadsField.getValue()));
-                    pd.set(new Parameter("app"),state.state.getClass().getName());
-                    pd.set(new Parameter("simulationSteps"), "" + numMaxSteps);
-                    sweeper = new ParameterSweep(pd);
-                    sweeperThread = new Thread(
-                        new Runnable()
-                            {
-                            @Override
-                            public void run() 
-                                {
-
-                                try 
-                                    {
-                                    sweeper.runSweepFromParamDatabase();
-                                    run.setIcon(sim.display.Console.iconFor("NotPlaying.png"));
-                                    }
-                                catch(Exception e)
-                                    {
-                                    e.printStackTrace();
-                                    }
-                                }
-                            });
-                    sweeperThread.start();
-
-                    } catch (Exception b) 
-                    {
-                    b.printStackTrace();
-                    }
-                //runner.run();
-                }
-            });
-        run.setBorderPainted(false);
-        run.setContentAreaFilled(false);
-        run.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+         
+        run.addActionListener(runActionListener(run)); 
 
         stop.addActionListener(new ActionListener() 
             {
@@ -289,11 +217,7 @@ public class ParameterSweepGUI extends JPanel
                     }
                 }
             });
-        stop.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        stop.setBorderPainted(false);
-        stop.setContentAreaFilled(false);
 
-        clear = new JButton("Reset Params");
         clear.addActionListener(new ActionListener() 
             {
             @Override
@@ -306,6 +230,7 @@ public class ParameterSweepGUI extends JPanel
                     PropertySettings currentProp = propList.getSelectedValue();
                     if(currentProp!=null) 
                         {
+                        updatePropertySettingsUI(currentProp.index);
                         updateParameters(currentProp);
                         }
                     }
@@ -334,18 +259,12 @@ public class ParameterSweepGUI extends JPanel
         maxStepsField.setPreferredSize(maxStepsField.getField().getPreferredSize());
         
 
-        seedField = new PropertyField("" + (int)state.state.seed() )
+        seedField = new PropertyField("" + getCurrentSeed() )
             {
             public String newValue(String value)
                 {
-                try
-                    {
-                    seed = Long.parseLong(value);
-                    }
-                catch (NumberFormatException ex)
-                    {
-                    }
-                return "" + seed;
+                    updateSeed(Long.parseLong(value), 0);
+                    return "" + getCurrentSeed();
                 }
             };
 
@@ -495,7 +414,6 @@ public class ParameterSweepGUI extends JPanel
 
     void updateParameters(PropertySettings currentProp)
         {
-        updatePropertySettingsUI(new int[] {currentProp.index,currentProp.index,currentProp.index});
         if (currentProp.amSet)
             {
             if (currentProp.amDependent)
@@ -518,28 +436,21 @@ public class ParameterSweepGUI extends JPanel
             }
         }
 
-    PropertyField makePropertyField(final int index, final PropertySettings settings, final String name) 
+                    //(properties.isComposite(index) ? PropertyField.SHOW_TEXTFIELD : (type == Boolean.TYPE || type == Boolean.class ? PropertyField.SHOW_CHECKBOX : (properties.getDomain(index) == null ? PropertyField.SHOW_TEXTFIELD : (properties.getDomain(index) instanceof Interval) ? PropertyField.SHOW_SLIDER : PropertyField.SHOW_LIST)))) {
+
+    private PropertyField makePropertyField(final int index, final PropertySettings settings, final String name) 
         {
         Class type = properties.getType(index);
-        final sim.util.Properties props = properties;            // see UNUSUAL BUG note below
-        //System.err.println("trying to make property field with name " +  name);
-        //System.err.println("its index is " + index + " and its type is" + properties.getType(index));
-        //System.err.println("is it hidden? " + properties.isHidden(index));
-        if(!name.equals("steps")) {
-
+        final sim.util.Properties props = properties;            
+        if(!name.equals("steps")) 
+        {
             PropertyField field = new PropertyField(
                 null,
                 properties.betterToString(properties.getValue(index)),
                 properties.isReadWrite(index),
-                properties.getDomain(index),
-                    (properties.isComposite(index) ?
-                    //PropertyField.SHOW_VIEWBUTTON :
-                    PropertyField.SHOW_TEXTFIELD :
-                        (type == Boolean.TYPE || type == Boolean.class ?
-                        PropertyField.SHOW_CHECKBOX :
-                            (properties.getDomain(index) == null ? PropertyField.SHOW_TEXTFIELD :
-                            (properties.getDomain(index) instanceof Interval) ?
-                            PropertyField.SHOW_SLIDER : PropertyField.SHOW_LIST)))) {
+                properties.getDomain(index), 
+                getShowValueForType(properties, type, index))
+            {
                 // The return value should be the value you want the display to show instead.
                 public String newValue(final String newValue) 
                     {
@@ -555,41 +466,15 @@ public class ParameterSweepGUI extends JPanel
                         // refresh the controller -- if it exists yet
                         if (ParameterSweepGUI.this.state.controller != null)
                             ParameterSweepGUI.this.state.controller.refresh();
-
-
                         if (name.equals("min")) 
                             {
-                            //System.err.println("changing the min of " + props.getName(index)  + " from " + settings.min + "  to " + Double.parseDouble(props.betterToString(props.getValue(index))));
                             settings.min = Double.parseDouble(props.betterToString(props.getValue(index)));
-                            } else if (name.equals("max")) 
+                            } 
+                        else if (name.equals("max")) 
                             {
-                            //System.err.println("changing the max of " + props.getName(index)  + " from " + settings.max + "  to " + Double.parseDouble(props.betterToString(props.getValue(index))));
                             settings.max = Double.parseDouble(props.betterToString(props.getValue(index)));
                             }
                         java.util.List<PropertySettings> list = propList.getSelectedValuesList();
-                        /*    if (list.size() > 0) 
-                              {
-                              PropertySettings active = list.get(list.size() - 1);
-                              if (dependentRadio.isSelected()) 
-                              {
-                              try 
-                              {
-                              active.set(everyStep.isSelected());
-                              } catch (NumberFormatException e2) 
-                              {
-                              }
-                              } 
-                              else 
-                              {
-                              try 
-                              {
-                              active.set(settings.min, settings.max, settings.steps, settings.average, settings.minValue, settings.maxValue);
-                              } catch (NumberFormatException e2) 
-                              {
-                              e2.printStackTrace();
-                              }
-                              }
-                              }*/
 
                         repaint();
                         revalidate();
@@ -602,13 +487,11 @@ public class ParameterSweepGUI extends JPanel
 
                     }
                 };
-            //System.err.println(("am i at leats set?") + propList.getSelectedValue().amSet);
             if(!propList.getSelectedValue().amDependent && propList.getSelectedValue().amSet) 
                 {
                 if (name.equals("min")) 
                     {
                     field.setValue(propList.getSelectedValue().min + "");
-                    //System.err.println("SETTING THE MIN TO " + propList.getSelectedValue().min);
 
                     } else if (name.equals("max")) 
                     {
@@ -622,34 +505,30 @@ public class ParameterSweepGUI extends JPanel
             }
         else
             {
-            String steps = settings==null ? "3" : ""+settings.steps;
-            PropertyField custom =  new PropertyField(steps) 
+            String steps = (settings == null) ? "3" : "" + settings.steps;
+            PropertyField custom = new PropertyField(steps) 
                 {
-                // The return value should be the value you want the display to show instead.
                 public String newValue(final String newValue) 
                     {
                     synchronized (ParameterSweepGUI.this.state.state.schedule) 
                         {
-                        // try to set the value
-
-                        // refresh the controller -- if it exists yet
-                        if (ParameterSweepGUI.this.state.controller != null)
-                            ParameterSweepGUI.this.state.controller.refresh();
-
+                        if (ParameterSweepGUI.this.state.controller != null) { ParameterSweepGUI.this.state.controller.refresh(); }
 
                         settings.steps = (int)Double.parseDouble(newValue);
                         java.util.List<PropertySettings> list = propList.getSelectedValuesList();
                         PropertySettings active = list.get(list.size() - 1);
+
                         try 
                             {
-                            if(settings.steps<1)
+                            if(settings.steps < 1)
                                 {
-                                settings.steps=1;
+                                settings.steps = 1;
                                 }
                             active.set(settings.min, settings.max, settings.steps, settings.average, settings.minValue, settings.maxValue);
                             } 
                         catch (NumberFormatException e2) 
                             {
+                                e2.printStackTrace();
                             }
 
                         repaint();
@@ -672,11 +551,9 @@ public class ParameterSweepGUI extends JPanel
     JRadioButton dependentRadio = new JRadioButton("Dependent");
     JRadioButton neitherRadio = new JRadioButton("Neither");
 
-    int index[];
 
-    void updatePropertySettingsUI(int[] index) 
+    void updatePropertySettingsUI(int index) 
         {
-        this.index = index;
 
         final Box propertyList = new Box(BoxLayout.Y_AXIS);
 
@@ -712,15 +589,15 @@ public class ParameterSweepGUI extends JPanel
         JPanel independentPanel = new JPanel();
         independentPanel.setLayout(new BorderLayout());
         LabelledList list = new LabelledList();
-        final PropertyField min = makePropertyField(index[0], propList.getSelectedValue(),"min");
-        final PropertyField max = makePropertyField(index[0], propList.getSelectedValue(),"max");
-        final PropertyField steps = makePropertyField(index[0], propList.getSelectedValue(),"steps");
+        final PropertyField min = makePropertyField(index, propList.getSelectedValue(),"min");
+        final PropertyField max = makePropertyField(index, propList.getSelectedValue(),"max");
+        final PropertyField steps = makePropertyField(index, propList.getSelectedValue(),"steps");
         propList.getSelectedValue().min=Double.parseDouble(min.getValue());
         propList.getSelectedValue().max=Double.parseDouble(max.getValue());
         propList.getSelectedValue().steps=Integer.parseInt(steps.getValue());
-        list.addLabelled("Min ", makePropertyField(index[0], propList.getSelectedValue(), "min"));
-        list.addLabelled("Max ", makePropertyField(index[1], propList.getSelectedValue(), "max"));
-        list.addLabelled("Steps ", makePropertyField(index[2], propList.getSelectedValue(), "steps"));
+        list.addLabelled("Min ", makePropertyField(index, propList.getSelectedValue(), "min"));
+        list.addLabelled("Max ", makePropertyField(index, propList.getSelectedValue(), "max"));
+        list.addLabelled("Steps ", makePropertyField(index, propList.getSelectedValue(), "steps"));
         independentPanel.add(list, BorderLayout.NORTH);
 
         JPanel dependentPanel = new JPanel();
@@ -824,37 +701,135 @@ public class ParameterSweepGUI extends JPanel
 
         outerParameterPanel.revalidate();
         outerParameterPanel.repaint();
-        //System.err.println("TRYING TO REPAINT");
         propPanel.repaint();
         propList.revalidate();
         propList.repaint();
-        //propertySettingsList.rev
         Utilities.doEnsuredRepaint(propList);
         propPanel.revalidate();
         propPanel.repaint();
         propList.repaint();
         propList.revalidate();
-
-        //propList.setModel(propertySettingsList);
         }
 
     void generateProperties() 
+    {
+
+    for (int i = 0; i < properties.numProperties(); i++) 
         {
-        // propertyList = new LabelledList(listName);
-        //members = new PropertyField[properties.numProperties()];
-
-        for (int i = 0; i < properties.numProperties(); i++) 
+        if (!properties.isHidden(i))  
             {
-            if (!properties.isHidden(i))  // don't show if the user asked that it be hidden
-                {
-                JLabel label = new JLabel(properties.getName(i) + " ");
-                JToggleButton toggle = PropertyInspector.getPopupMenu(properties, i, state, makePreliminaryPopup(i));
-                //members[i] = makePropertyField(i,propList.getSelectedValue(),properties.getName(i));
-                //propertyList.add(label, members[i]);
-                }
-            //else members[i] = null;
+            JLabel label = new JLabel(properties.getName(i) + " ");
+            JToggleButton toggle = PropertyInspector.getPopupMenu(properties, i, state, makePreliminaryPopup(i));
             }
-
-        this.start = start;
         }
+
+    this.start = start;
     }
+
+    private int getShowValueForType(sim.util.Properties properties, Class type, int index)
+        {
+        int show_value = -1;
+        if (properties.isComposite(index)) { show_value = PropertyField.SHOW_TEXTFIELD; }
+        else if ( type == Boolean.TYPE || type == Boolean.class) { show_value =  PropertyField.SHOW_CHECKBOX;}
+        else if ( properties.getDomain(index) == null ) { show_value =  PropertyField.SHOW_TEXTFIELD; }
+        else if ( properties.getDomain(index) instanceof Interval) { show_value =  PropertyField.SHOW_SLIDER; }
+        else { show_value = PropertyField.SHOW_LIST; }
+        return show_value;
+        }
+
+    private ActionListener runActionListener(JButton run) {
+        return new ActionListener() 
+            {
+            public void actionPerformed(ActionEvent e) 
+                {
+                try 
+                    {
+                    if(!isValidConfiguration())
+                        {
+                        JOptionPane.showMessageDialog(null,"You need to have both an independent and a dependent variable set to run");
+                        return;
+                        }
+                    String filePath = getFilePath(); 
+                    if (filePath == null) { return; }
+                    final ParameterDatabase pd = PropertySettings.convertToDatabase(propList.getModel(),numMaxSteps,filePath,Integer.parseInt(repeatsField.getValue()), Integer.parseInt(threadsField.getValue()), Integer.parseInt(seedField.getValue()));
+                    pd.set(new Parameter("app"),state.state.getClass().getName());
+                    pd.set(new Parameter("simulationSteps"), "" + numMaxSteps);
+                    sweeper = new ParameterSweep(pd);
+                    sweeperThread = new Thread(
+                        new Runnable()
+                            {
+                            @Override
+                            public void run() 
+                                {
+
+                                try 
+                                    {
+                                    sweeper.runSweepFromParamDatabase();
+                                    run.setIcon(sim.display.Console.iconFor("NotPlaying.png"));
+                                    }
+                                catch(Exception e)
+                                    {
+                                    e.printStackTrace();
+                                    }
+                                }
+                            });
+                    sweeperThread.start();
+                    updateSeed(getCurrentSeed(), Integer.parseInt(repeatsField.getValue())); 
+                    } 
+                    catch (Exception b) 
+                    {
+                        b.printStackTrace();
+                    }
+                }
+            };
+        }
+
+        private String getFilePath() {
+            String filePath = "";
+            FileDialog dialog = new FileDialog((Frame)null, "Save Results to File...", FileDialog.SAVE);
+            dialog.setFilenameFilter(new FilenameFilter()
+                {
+                public boolean accept(File dir, String name)
+                    {
+                    return !name.endsWith(".csv");
+                    }
+                });
+            
+            dialog.setVisible(true);
+            String filename = dialog.getFile();
+            filename = filename + ".csv";
+            if (compressOutput.isSelected()) { filename = filename + ".gz"; }
+            String directory = dialog.getDirectory();
+            if (filename == null)
+                return null;
+                
+            try 
+                { 
+                filePath = new File(new File(directory), filename).getCanonicalPath();
+                }
+            catch (IOException ex)
+                {
+                ex.printStackTrace();
+                return null;
+                }
+            return filePath;
+            }
+        private long getNewSeed() 
+        {
+            Instant instant = Instant.now();
+            long seedFromInstant = instant.getEpochSecond();
+            long seedForXOR = seedFromInstant & 0x00000000ffffffff;
+            seedFromInstant = seedFromInstant >> 32;
+            return seedFromInstant ^ seedForXOR;
+        }
+
+        private long getCurrentSeed() 
+        {
+            return state.state.seed();
+        }
+
+        private void updateSeed(long seed, int trials) 
+        {
+            state.state.setSeed(seed+trials);
+        }
+}

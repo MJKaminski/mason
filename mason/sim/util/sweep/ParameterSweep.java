@@ -4,14 +4,15 @@ import sim.engine.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.zip.GZIPOutputStream;
 import sim.util.*;
 import ec.util.*;
+import java.util.zip.GZIPOutputStream;
 
 public class ParameterSweep 
     {
     // the master file 
     PrintWriter printWriter;
+    GZIPOutputStream gzip;
     Object[] printWriterLock = new Object[0];
     public void println(String val) { synchronized(printWriterLock) { printWriter.println(val); } }
 
@@ -47,11 +48,10 @@ public class ParameterSweep
     Class modelClass;
     String[] args;
     
-    // Number of simulation steps?
     int simulationSteps;
     
-    /// FIXME We need to set this in the constructor
-    long baseSeed = 100;
+    long seed = 100;
+    SimState simState;
 
     // This is an arraylist of arraylists of doubles, recursively generated, for each combination of values of our independent variables
     ArrayList<ArrayList<Double>> allIndependentVariableValueCombinations = new ArrayList<ArrayList<Double>>();
@@ -83,15 +83,18 @@ public class ParameterSweep
                 {
                 public void run()
                     {
+                    SimState simState = newInstance(seed, modelClass);
+                    sim.util.Properties properties = sim.util.Properties.getProperties(simState);
                     ParameterSweepSimulationJob job;
-                    while ((job = (ParameterSweepSimulationJob)getNextJob()) != null) 
+                    while ((job = (ParameterSweepSimulationJob)getNextJob(simState)) != null) 
                         {
                         if (stop) 
                             {
                             break;
                             }
-                        job.run();
+                        job.run(simState, properties);
                         }
+                    simState.finish();
                     }
                 };
             threads[i].start();
@@ -116,8 +119,8 @@ public class ParameterSweep
         String appPath = ((String)(pd.getStringWithDefault(new Parameter("app"), null, "bad"))).replace("/",".");
 
         modelClass = Class.forName(appPath);
-        minValues = getArrayByParameter(pd,new Parameter("min"));
-        maxValues = getArrayByParameter(pd,new Parameter("max"));
+        minValues = getDoubleArrayByParameter(pd,new Parameter("min"));
+        maxValues = getDoubleArrayByParameter(pd,new Parameter("max"));
         numSteps = getIntegerArrayByParameter(pd,new Parameter("steps"));
         independentNames = ((String)(pd.getStringWithDefault(new Parameter("independent"), null, "bad"))).split(",");
         dependentNames = ((String)(pd.getStringWithDefault(new Parameter("dependent"), null, "bad"))).split(",");
@@ -129,18 +132,19 @@ public class ParameterSweep
         recordMax = getBooleanArrayByParameter(pd,new Parameter("recordMax"),dependentNames.length);
         numRepeats = Integer.parseInt(((String)(pd.getStringWithDefault(new Parameter("numRepeats"), null, "bad"))));
         numThreads = Integer.parseInt(((String)(pd.getStringWithDefault(new Parameter("threads"), null, "bad"))));
+        seed = Long.parseLong(((String)(pd.getStringWithDefault(new Parameter("seed"), null, "bad"))));
 
         try
             {
             String fileName = pd.getStringWithDefault(new Parameter("out"), null, "bad");
-            if (!fileName.substring(fileName.length()-4, fileName.length()-1).equalsIgnoreCase(".gz"))
+            if (!fileName.substring(fileName.length()-3, fileName.length()).equalsIgnoreCase(".gz"))
                 {
                     printWriter = new PrintWriter(new FileWriter(((String)(pd.getStringWithDefault(new Parameter("out"), null, "bad")))));
                 }
             else 
                 {   
-                    GZIPOutputStream gzip = new GZIPOutputStream(new FileOutputStream(new File(fileName)));
-                    printWriter = new PrintWriter(new OutputStreamWriter(gzip));
+                    gzip = new GZIPOutputStream(new FileOutputStream(new File(fileName)));
+                    printWriter = new PrintWriter(new OutputStreamWriter(new BufferedOutputStream(gzip)));
                 }
             }
         catch (IOException e)
@@ -149,7 +153,7 @@ public class ParameterSweep
             e.printStackTrace();
             }
                 
-        SimState simState = newInstance(0, modelClass);
+        SimState simState = newInstance(seed, modelClass);
         sim.util.Properties properties = sim.util.Properties.getProperties(simState);
         initializeIndexes(properties);
         }
@@ -192,7 +196,7 @@ public class ParameterSweep
                 }
             if (!success)
                 {
-                //System.err.println("Parameter did not exist! " + independentNames[i]);
+                System.err.println("Parameter did not exist! " + independentNames[i]);
                 System.exit(1);
                 }
             }
@@ -218,7 +222,7 @@ public class ParameterSweep
         }
     
     //converts a list of doubles in the parameter database to a double array
-    private double[] getArrayByParameter(ParameterDatabase pd, Parameter par) 
+    private double[] getDoubleArrayByParameter(ParameterDatabase pd, Parameter par) 
         {
         String nums = (String)pd.getStringWithDefault(par, null, "bad");
         String numsArray[] = nums.split(",");
@@ -274,7 +278,6 @@ public class ParameterSweep
                 }
             catch(Exception e) 
                 {
-                //System.err.println("INVALID PARAMETER");
                 e.printStackTrace();
                 System.exit(1);
                 }
@@ -308,15 +311,17 @@ public class ParameterSweep
         }
 
     Object[] nextJobLock = new Object[0];
-    public ParameterSweepSimulationJob getNextJob() 
+    public ParameterSweepSimulationJob getNextJob(SimState simState) 
         {
         synchronized(nextJobLock)
             {
+            int repeatCount = 0;
             if (jobCount < allIndependentVariableValueCombinations.size() * numRepeats)              // I think this means we're done?
                 {
                 /// FIXME: is the integer division here correct?
-                ParameterSweepSimulationJob j = new ParameterSweepSimulationJob(allIndependentVariableValueCombinations.get(jobCount / numRepeats), this, jobCount);
+                ParameterSweepSimulationJob j = new ParameterSweepSimulationJob(allIndependentVariableValueCombinations.get(jobCount / numRepeats), this, jobCount, repeatCount);
                 jobCount++;
+                printWriter.flush();
                 return j;
                 }
             else
@@ -327,62 +332,42 @@ public class ParameterSweep
     }
 
 
-
+//nest this and make static
+//
 class ParameterSweepSimulationJob
     {
     ArrayList<Double> settings;
     ParameterSweep sweep;
-    SimState simState;
     sim.util.Properties properties;
     StringBuilder builder = new StringBuilder();
+    StringBuilder header = new StringBuilder();
     int jobCount;
+    int repeat;
 
     double[] averages;
     double[] mins;
     double[] maxes;
         
-    public ParameterSweepSimulationJob(ArrayList<Double> settings, ParameterSweep sweep, int jobCount)
+    public ParameterSweepSimulationJob( ArrayList<Double> settings, ParameterSweep sweep, int jobCount, int repeat)
         {
         this.jobCount = jobCount;
+        this.repeat = repeat;
         this.sweep = sweep;
-        simState = sweep.newInstance(sweep.baseSeed + jobCount, sweep.modelClass);
-        properties = sim.util.Properties.getProperties(simState);
-        for(int i = 0; i< sweep.independentIndexes.length; i++)
-            {
-            int index =i;
-            String type = properties.getType(sweep.independentIndexes[index]).toString();
-
-            if (type.equals("double")) 
-                {
-                properties.setValue(sweep.independentIndexes[index], settings.get(index));
-                }
-            else if (type.equals("int")) 
-                {
-                properties.setValue(sweep.independentIndexes[index], (int)Math.round(settings.get(index)));
-                }
-            else if (type.equals("boolean")) 
-                {
-                properties.setValue(sweep.independentIndexes[index], Math.round(settings.get(index)) == 1);
-                }
-            else
-                {
-                //System.err.println("Independent: unsupported type " + properties.getType(src.main.java.sim.util.sweep.independentIndexes[index]).toString() +  " on index " + index + " which should be..." + properties.getName(src.main.java.sim.util.sweep.independentIndexes[index]));
-                throw new RuntimeException("Unsupported type");
-                }
-            }
-
+        this.settings = settings;
         averages = new double[sweep.dependentIndexes.length];
         mins = new double[sweep.dependentIndexes.length];
         maxes = new double[sweep.dependentIndexes.length];
-
-        System.err.println("running simstate with settings: " + settings);
         }
     
 
-    public void record(boolean start)
+    public void record(boolean start, int numSteps, sim.util.Properties properties)
         {
         for(int i = 0; i < sweep.dependentIndexes.length; i++)
             {
+            String currName = sweep.dependentNames[i];
+            header.append(", " + currName + "-min-" + numSteps);
+            header.append(", " + currName + "-max-" + numSteps);
+            header.append(", " + currName + "-avg-" + numSteps);
             double value = getPropertyValueAsDouble(properties, sweep.dependentIndexes[i]);
 
             if (sweep.recordAverage[i])
@@ -404,39 +389,31 @@ class ParameterSweepSimulationJob
                 
             //// FIXME We are not skipping steps per the GUI
 
-            if (sweep.everyStep[i] || (i != 0 && (sweep.nStep[i] % i == 0))) 
+            if (!sweep.everyStep[i] || (i != 0 && (sweep.nStep[i] % i == 0))) 
                 {
-                    builder.append(", " + value);
+                    builder.append(value + ", ");
                 }
             }
         }
          //could be done more efficiently instead of with 4 for-loops?        
-    public void recordFinal(int numSteps)
+    public void recordFinal(int numSteps, sim.util.Properties properties)
         {
-        String str = "";
-        for(int i = 0; i < sweep.independentNames.length; i++) 
-        {
-            str = str + ", " + sweep.independentNames[i];
-        }
-        for(int i = 0; i < sweep.dependentNames.length; i++) 
-        {
-            str = str + ", " + sweep.dependentNames[i]; i++;
-        }
 
+        String str = "";
         for(int i = 0; i < sweep.dependentIndexes.length; i++) 
         {
-            str = str + ", " + properties.getValue(sweep.dependentIndexes[i]).toString();
+            str = str + sweep.independentNames[i] + ", ";
         }
                 
         for(int i = 0; i < sweep.dependentIndexes.length; i++)
             {
             // Record last for sure
-            str = str + ", " + properties.getValue(sweep.dependentIndexes[i]).toString();
+            str = str + sweep.dependentNames[i] + ", " ;
                         
             // record average, min, max
             if (sweep.recordAverage[i]) 
                 {
-                str = str + ", avg: " + averages[i] / numSteps;
+                str = str + "avg: " + averages[i] / numSteps;
                 }
                         
             if (sweep.recordMin[i]) 
@@ -445,22 +422,22 @@ class ParameterSweepSimulationJob
                 }
             if (sweep.recordMax[i])
                 {
-                str = str + ", max: " + maxes[i];
+                str = str + ", max: " + maxes[i] + " ";
                 }
             }
-                        
-        if (builder.length() > 0)
-            {
+            header.append("\n"); 
+            str = header.toString() + str;
             str = str + ", STEPS" + builder.toString();
-            }
                         
         sweep.println(str);
         }
     
-    public void run() 
+    public void run(SimState simState, sim.util.Properties properties) 
         {
         // Run the simulation
         simState.start();
+        initHeader();
+        properties = initSweepValuesFromProperties(properties);
         for(int i = 0; i< sweep.simulationSteps; i++)
             {
                 if (sweep.stop)
@@ -469,13 +446,55 @@ class ParameterSweepSimulationJob
                     return;
                 }
                 simState.schedule.step(simState);
-                record(i == 0);
+                record(i == 0, i, properties);
             }
-        
+      
         // at this point we weren't stopped, so clean up properly
         simState.finish();
-        recordFinal(sweep.simulationSteps);
+        recordFinal(sweep.simulationSteps, properties);
         }
+    //when you press play it grabs the seed and sets the GUI seed to be equal to the seed + the increment from the number of jobs 
+
+    private  sim.util.Properties initSweepValuesFromProperties(sim.util.Properties properties) 
+    {
+
+        for(int index = 0; index < sweep.independentIndexes.length; index++)
+            {
+            String type = properties.getType(sweep.independentIndexes[index]).toString();
+
+            if (type.equals("double")) 
+                {
+                properties.setValue(sweep.independentIndexes[index], settings.get(index));
+                }
+            else if (type.equals("int")) 
+                {
+                properties.setValue(sweep.independentIndexes[index], (int)Math.round(settings.get(index)));
+                }
+            else if (type.equals("boolean")) 
+                {
+                properties.setValue(sweep.independentIndexes[index], Math.round(settings.get(index)) == 1);
+                }
+            else
+                {
+                //System.err.println("Independent: unsupported type " + properties.getType(src.main.java.sim.util.sweep.independentIndexes[index]).toString() +  " on index " + index + " which should be..." + properties.getName(src.main.java.sim.util.sweep.independentIndexes[index]));
+                throw new RuntimeException("Unsupported type");
+                }
+       }
+       return properties;
+    }
+
+    private void initHeader() { 
+        header.append("JOB: " + sweep.jobCount + ", TRIAL: " + repeat+", RNG: " + sweep.seed);
+        for(int i = 0; i < sweep.independentNames.length; i++) 
+        {
+            header.append(", " + sweep.independentNames[i]);
+        }
+        for (int i = 0; i < sweep.dependentNames.length; i++) {
+            header.append(", " + sweep.dependentNames[i]);
+        }
+        
+    }
+
 
     public double getPropertyValueAsDouble(sim.util.Properties properties, int dependentIndex) 
         {
@@ -484,7 +503,7 @@ class ParameterSweepSimulationJob
         String type = properties.getType(propertyIndex).toString();
 
         if (type.equals("double")) 
-            {
+        {
             dValue = (Double)properties.getValue(propertyIndex);
             }
         else if (type.equals("int")) 
