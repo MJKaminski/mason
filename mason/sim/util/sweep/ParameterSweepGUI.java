@@ -775,6 +775,7 @@ public class ParameterSweepGUI extends JPanel
                             });
                     sweeperThread.start();
                     updateSeed(getCurrentSeed(), Integer.parseInt(repeatsField.getValue())); 
+                    seedField.setValue("" + getCurrentSeed());
                     } 
                     catch (Exception b) 
                     {
@@ -797,11 +798,11 @@ public class ParameterSweepGUI extends JPanel
             
             dialog.setVisible(true);
             String filename = dialog.getFile();
+            if (filename == null)
+                return null;
             filename = filename + ".csv";
             if (compressOutput.isSelected()) { filename = filename + ".gz"; }
             String directory = dialog.getDirectory();
-            if (filename == null)
-                return null;
                 
             try 
                 { 
