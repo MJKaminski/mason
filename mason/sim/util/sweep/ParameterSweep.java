@@ -75,7 +75,7 @@ public class ParameterSweep
     public void runSweepFromParamDatabase() throws ClassNotFoundException 
         {
         generateAllIndependentVariableValueCombinations(new ArrayList<Double>());
-        
+        writeFileHeader(); 
         Thread[] threads = new Thread[numThreads];
         for(int i = 0; i < threads.length; i++) 
             {
@@ -94,7 +94,6 @@ public class ParameterSweep
                             }
                         job.run(simState, properties);
                         }
-                    simState.finish();
                     }
                 };
             threads[i].start();
@@ -329,8 +328,30 @@ public class ParameterSweep
             }
         }
 
-    }
-
+    private void writeFileHeader() 
+        {
+            StringBuilder header = new StringBuilder(); 
+            header.append("JOB: " + ", TRIAL: " + ", RNG: ");
+            for(int i = 0; i < independentNames.length; i++) 
+            {
+                header.append(", " + independentNames[i]);
+            }
+            for (int i = 0; i < dependentNames.length; i++) {
+                header.append(", " + dependentNames[i]);
+            }
+            for(int j = 0; j < simulationSteps; j++)
+            {
+                for(int i = 0; i < dependentIndexes.length; i++)
+                {
+                    String currName = dependentNames[i];
+                   if (recordMin[i]) { header.append(", " + currName + "-min-" + j); }
+                   if (recordMax[i]) { header.append(", " + currName + "-max-" + j); }
+                   if (recordAverage[i]) { header.append(", " + currName + "-avg-" + j); }
+                }
+            }
+            println(header.toString());
+        }
+}
 
 //nest this and make static
 //
@@ -340,7 +361,6 @@ class ParameterSweepSimulationJob
     ParameterSweep sweep;
     sim.util.Properties properties;
     StringBuilder builder = new StringBuilder();
-    StringBuilder header = new StringBuilder();
     int jobCount;
     int repeat;
 
@@ -362,99 +382,79 @@ class ParameterSweepSimulationJob
 
     public void record(boolean start, int numSteps, sim.util.Properties properties)
         {
-        for(int i = 0; i < sweep.dependentIndexes.length; i++)
+            for(int i = 0; i < sweep.dependentIndexes.length; i++)
             {
-            String currName = sweep.dependentNames[i];
-            header.append(", " + currName + "-min-" + numSteps);
-            header.append(", " + currName + "-max-" + numSteps);
-            header.append(", " + currName + "-avg-" + numSteps);
-            double value = getPropertyValueAsDouble(properties, sweep.dependentIndexes[i]);
+                double value = getPropertyValueAsDouble(properties, sweep.dependentIndexes[i]);
 
-            if (sweep.recordAverage[i])
-                {
-                averages[i] += value;
-                }
-                
-            if (sweep.recordMin[i])
-                {
-                if (mins[i] > value || start)
-                    mins[i] = value;
-                }
-                
-            if (sweep.recordMax[i])
-                {
-                if (maxes[i] < value || start)
-                    maxes[i] = value;
-                }
-                
-            //// FIXME We are not skipping steps per the GUI
+                if (sweep.recordAverage[i])
+                    {
+                    averages[i] += value;
+                    }
+                    
+                if (sweep.recordMin[i])
+                    {
+                    if (mins[i] > value || start)
+                        mins[i] = value;
+                    }
+                    
+                if (sweep.recordMax[i])
+                    {
+                    if (maxes[i] < value || start)
+                        maxes[i] = value;
+                    }
+                    
+                //// FIXME We are not skipping steps per the GUI
 
-            if (!sweep.everyStep[i] || (i != 0 && (sweep.nStep[i] % i == 0))) 
-                {
-                    builder.append(value + ", ");
-                }
+                if (!sweep.everyStep[i] || (i != 0 && (sweep.nStep[i] % i == 0))) 
+                    {
+                        builder.append(value + ", ");
+                    }
             }
         }
          //could be done more efficiently instead of with 4 for-loops?        
     public void recordFinal(int numSteps, sim.util.Properties properties)
         {
-
-        String str = "";
-        for(int i = 0; i < sweep.dependentIndexes.length; i++) 
-        {
-            str = str + sweep.independentNames[i] + ", ";
-        }
+        String str = jobCount + "," + repeat + "," + sweep.seed +",";
                 
         for(int i = 0; i < sweep.dependentIndexes.length; i++)
             {
-            // Record last for sure
-            str = str + sweep.dependentNames[i] + ", " ;
-                        
-            // record average, min, max
             if (sweep.recordAverage[i]) 
                 {
-                str = str + "avg: " + averages[i] / numSteps;
+                    builder.append(averages[i] / numSteps);
                 }
                         
             if (sweep.recordMin[i]) 
                 {
-                str = str + ", min: " + mins[i];
+                    builder.append(mins[i]);
                 }
             if (sweep.recordMax[i])
                 {
-                str = str + ", max: " + maxes[i] + " ";
+                    builder.append(maxes[i]);
                 }
             }
-            header.append("\n"); 
-            str = header.toString() + str;
-            str = str + ", STEPS" + builder.toString();
+            str = str + ", STEPS " + builder.toString();
                         
         sweep.println(str);
         }
     
     public void run(SimState simState, sim.util.Properties properties) 
         {
-        // Run the simulation
         simState.start();
-        initHeader();
         properties = initSweepValuesFromProperties(properties);
         for(int i = 0; i< sweep.simulationSteps; i++)
             {
                 if (sweep.stop)
                     {
-                    simState.finish();  // don't bother to record final here
+                    simState.finish();  
                     return;
                 }
                 simState.schedule.step(simState);
                 record(i == 0, i, properties);
             }
       
-        // at this point we weren't stopped, so clean up properly
-        simState.finish();
         recordFinal(sweep.simulationSteps, properties);
+        simState.finish();
         }
-    //when you press play it grabs the seed and sets the GUI seed to be equal to the seed + the increment from the number of jobs 
-
     private  sim.util.Properties initSweepValuesFromProperties(sim.util.Properties properties) 
     {
 
@@ -482,19 +482,6 @@ class ParameterSweepSimulationJob
        }
        return properties;
     }
-
-    private void initHeader() { 
-        header.append("JOB: " + sweep.jobCount + ", TRIAL: " + repeat+", RNG: " + sweep.seed);
-        for(int i = 0; i < sweep.independentNames.length; i++) 
-        {
-            header.append(", " + sweep.independentNames[i]);
-        }
-        for (int i = 0; i < sweep.dependentNames.length; i++) {
-            header.append(", " + sweep.dependentNames[i]);
-        }
-        
-    }
-
 
     public double getPropertyValueAsDouble(sim.util.Properties properties, int dependentIndex) 
         {
