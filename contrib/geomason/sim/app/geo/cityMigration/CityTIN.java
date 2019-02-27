@@ -5,9 +5,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import cityMigration.cityMigrationData.CityMigrationData;
-import riftland.PopulationCenter;
-import riftland.World;
+import sim.app.geo.cityMigration.tin.CityMigrationData;
+import sim.app.geo.riftland.PopulationCenter;
+import sim.app.geo.riftland.World;
 import sim.field.geo.GeomGridField;
 import sim.field.geo.GeomVectorField;
 import sim.field.grid.IntGrid2D;
@@ -53,8 +53,8 @@ public class CityTIN {
 
 
             // read in the roads to create the transit network
-            ShapeFileImporter.read(nodesFile, nodes);
-            ShapeFileImporter.read(edgesFile, edges);
+            ShapeFileImporter.read(nodesFile, getUrl(nodesFilename.replace("shp", "dbf")),  nodes);
+            ShapeFileImporter.read(edgesFile, getUrl(edgesFilename.replace("shp", "dbf")), edges);
 
 
             Bag geoms = nodes.getGeometries();

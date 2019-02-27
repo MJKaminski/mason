@@ -142,12 +142,6 @@ public class JBox2DObject implements Constrained, Steppable, Orientable2D
     	return body;
     	}
 
-	/** Returns the field affiliated with this JBox2DObject. */
-    public Continuous2D getField()
-    	{
-    	return field;
-    	}
-
 	/** Returns whether Y is inverted. */
     public boolean getInvertY() { return invertY; }
 

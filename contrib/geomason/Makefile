@@ -1,6 +1,4 @@
-#
-# GeoMason make file
-#
+
 # Note that you will have to uncomment the GeoTools and/or OGR support
 # in the jar file rule if you want support for those importers.
 #
@@ -12,72 +10,134 @@
 #
 # See other make options:
 # make help
-LIBS=`function join() { local IFS=$$1; shift; echo "$$*"; }; join ":" ../../library/* `
-GLIBS=`function join() { local IFS=$$1; shift; echo "$$*"; }; join ":" geolib/* `
-FLAGS = -g -nowarn -cp ${LIBS}:${GLIBS}
+#LIBS=`function join() { local IFS=$$1; shift; echo "$$*"; }; join ":" ../../library/* `
+#GLIBS=`function join() { local IFS=$$1; shift; echo "$$*"; }; join ":" geolib/* `
+CP = -cp $$CLASSPATH:../distributed/jar/distributed.1.jar:../../mason/jar/mason.19.jar
+FLAGS = -nowarn -g ${CP}
 JAVAC = mpijavac ${FLAGS}
-BUILDDIR=$$(pwd)
-# GeoMason supports Java 5; note that MASON proper only supports Java 4.
+CC = ${JAVAC}
 
-VERSION = 1.6
+VERSION = 1.6.1
 
 JARFILE = geomason.${VERSION}.jar
 
 SRC_DISTRO  = geomason.src.${VERSION}.tgz
 DEMO_DISTRO = geomason.demos.${VERSION}.tgz
 
-all: jar demos
+all: demos jar
 
+# All the main GeoMason source files
+BASE_FILES = ./sim/field/geo/*.java		\
+			 ./sim/io/geo/*.java		\
+			 ./sim/portrayal/geo/*.java			\
+			 ./sim/util/geo/*.java			\
+			 ./sim/io/geo/*.java			
+#---- DEMOS AND THEIR ASSOCIATED FILES -----# In alphabetical order anyway
+ACEQUIAS = sim/app/geo/acequias/*.java \
+		   sim/app/geo/acequias/objects/*.java 
 
-DEMOS = \
-	sim/app/geo/campusworld/*.java		\
-	sim/app/geo/colorworld/*.java		\
-	sim/app/geo/dcampusworld/*.java		\
-	sim/app/geo/dschellingspace/*.java	\
-	sim/app/geo/gridlock/*.java		\
-	sim/app/geo/masoncsc/gui/*.java		\
-	sim/app/geo/masoncsc/properties/*.java	\
-	sim/app/geo/masoncsc/submodel/*.java	\
-	sim/app/geo/masoncsc/submodel/flockersAndHeatBugs/*.java \
-	sim/app/geo/masoncsc/submodel/flockersAndHeatBugs/flockers/*.java \
-	sim/app/geo/masoncsc/submodel/flockersAndHeatBugs/heatBugs/*.java \
-	sim/app/geo/nearbyworld/*.java		\
-	sim/app/geo/networkworld/*.java		\
-	sim/app/geo/schellingpolygon/*.java	\
-	sim/app/geo/schellingspace/*.java	\
-	sim/app/geo/sickStudents/*.java		\
-	sim/app/geo/sillypeds/*.java		\
-	sim/app/geo/sleuth/*.java		\
-	sim/app/geo/touchingworld/*.java	\
-	sim/app/geo/turkana/*.java		\
-	sim/app/geo/waterworld/*.java		
-	# sim/app/geo/acequias/*.java		\
-	# sim/app/geo/CDI/ # Not ready		\
-	# sim/app/geo/conflictdiamonds/*.java	\ 
-	# sim/app/geo/cityMigration/*.java	\ 
-	# sim/app/geo/dadaab/*.java		\
-	# sim/app/geo/ebola/*.java		\
-	# sim/app/geo/riftland/*.java		\
-	# sim/app/geo/riftland/conflict/*.java	\
-	# sim/app/geo/riftland/dataCollectors/*.java	\
-	# sim/app/geo/riftland/gui/*.java		\
-	# sim/app/geo/riftland/household/*.java	\
-	# sim/app/geo/riftland/parcel/*.java	\
-	# sim/app/geo/riftland/util/*.java	\
-	# sim/app/geo/kibera/*.java		\
-	# sim/app/geo/hotspots/objects/*.java	\
-	# sim/app/geo/hotspots/sim/*.java		\
-	# sim/app/geo/hotspots/visualization/*.java	\
-	# sim/app/geo/masoncsc/datawatcher/*.java	\
-	# sim/app/geo/refugee/*.java		\
-	# sim/app/geo/haiti/*.java		\
+CAMPUSWORLD = sim/app/geo/campusworld/*.java \
+			  sim/app/geo/campusworld/data/*.java
+CDI = sim/app/geo/CDI/*.java \
+	  sim/app/geo/CDI/src/*.java \
+	  sim/app/geo/CDI/src/files/*.java \
+	  sim/app/geo/CDI/src/files/data/*.java \
+	  sim/app/geo/CDI/src/government/*.java \
+	  sim/app/geo/CDI/src/migration/*.java \
+	  sim/app/geo/CDI/src/migration/util/*.java \
+	  sim/app/geo/CDI/src/migration/parameters/*.java \
+	  sim/app/geo/CDI/src/movement/*.java \
+	  sim/app/geo/CDI/src/movement/data/*.java \
+	  sim/app/geo/CDI/src/movement/parameters/*.java \
+	  sim/app/geo/CDI/src/optimization/*.java \
+	  sim/app/geo/CDI/src/optimization/desirability/*.java \
+	  sim/app/geo/CDI/src/optimization/util/*.java \
+	  sim/app/geo/CDI/src/phases/*.java \
+	  sim/app/geo/CDI/src/phases/util/*.java \
+	  sim/app/geo/CDI/src/environment/*.java 
 
+CITYMIGRATION = sim/app/geo/cityMigration/*.java \
+				sim/app/geo/cityMigration/tin/*.java
 
+COLORWORLD = sim/app/geo/colorworld/*.java \
+			 sim/app/geo/colorworld/data/*.java
 
-# Note that we do not restrict demos to Java 1.4 as is this case with MASON
+CONFLICTDIAMONDS = sim/app/geo/conflictdiamonds/*.java 
+
+DADAAB = sim/app/geo/dadaab/*.java
+
+DCAMPUSWORLD = sim/app/geo/dcampusworld/*.java	\
+			   sim/app/geo/dcampusworld/data/*.java
+
+DSCHELLINGSPACE = sim/app/geo/dschellingspace/*.java \
+				 sim/app/geo/dschellingspace/data/*.java
+
+EBOLA = sim/app/geo/ebola/*.java
+
+GRIDLOCK = sim/app/geo/gridlock/*.java \
+		   sim/app/geo/gridlock/data/*.java
+
+HAITI = sim/app/geo/haiti/*.java
+
+HOTSPOTS = sim/app/geo/hotspots/objects/*.java \
+		   sim/app/geo/hotspots/sim/*.java \
+		   sim/app/geo/hotspots/visualization/*.java
+
+KIBERA = sim/app/geo/kibera/*.java
+
+MASONCSC = sim/app/geo/masoncsc/*.java \
+		   sim/app/geo/masoncsc/gui/*.java \
+		   sim/app/geo/masoncsc/properties/*.java \
+		   sim/app/geo/masoncsc/submodel/*.java \
+		   sim/app/geo/masoncsc/submodel/flockersAndHeatBugs/*.java \
+		   sim/app/geo/masoncsc/submodel/flockersAndHeatBugs/heatBugs/*.java \
+		   sim/app/geo/masoncsc/submodel/flockersAndHeatBugs/flockers/*.java \
+		   sim/app/geo/masoncsc/datawatcher/*.java \
+		   sim/app/geo/masoncsc/util/*.java
+
+NEARBYWORLD = sim/app/geo/nearbyworld/*.java
+
+NETWORKWORLD = sim/app/geo/networkworld/*.java
+
+REFUGEE = sim/app/geo/refugee/*.java 
+
+RIFTLAND = sim/app/geo/riftland/*.java \
+		   sim/app/geo/riftland/conflict/*.java \
+		   sim/app/geo/riftland/dataCollectors/*.java \
+		   sim/app/geo/riftland/gui/*.java \
+		   sim/app/geo/riftland/household/*.java \
+		   sim/app/geo/riftland/parcel/*.java \
+		   sim/app/geo/riftland/util/*.java
+
+SCHELLINGPOLYGON = sim/app/geo/schellingpolygon/*.java \
+				   sim/app/geo/schellingpolygon/data/*.java
+
+SCHELLINGSPACE = sim/app/geo/schellingspace/*.java \
+				 sim/app/geo/schellingspace/data/*.java
+
+SICKSTUDENTS = sim/app/geo/sickStudents/*.java \
+			   sim/app/geo/sickStudents/data/*.java
+
+SILLYPEDS = sim/app/geo/sillypeds/*.java 
+
+SLEUTH = sim/app/geo/sleuth/*.java
+
+TOUCHINGWORLD = sim/app/geo/touchingworld/*.java 
+
+TURKANA = sim/app/geo/turkana/*.java
+
+WATERWORLD = sim/app/geo/waterworld/*.java
+#----- END DEMOS ------#
+DISTRIBUTEDDEMOS = $(DCAMPUSWORLD) $(DSCHELLINGSPACE)
+DEMOS = $(CAMPUSWORLD) $(CDI) $(CITYMIGRATION) $(COLORWORLD) $(CONFLICTDIAMONDS) $(DADAAB) $(EBOLA) $(GRIDLOCK) $(HAITI) $(HOTSPOTS) $(KIBERA) $(MASONCSC) $(NEARBYWORLD) $(NETWORKWORLD) $(REFUGEE) $(RIFTLAND) $(SCHELLINGPOLYGON) $(SCHELLINGSPACE) $(SICKSTUDENTS) $(SILLYPEDS) $(SLEUTH) $(TOUCHINGWORLD) $(TOUCHINGWORLD) $(TURKANA) $(WATERWORLD) $(DISTRIBUTEDDEMOS)
+# ^ These demos compile
+# These demos don't: ACEQUIAS
+
+#DEMOS += $(ACEQUIAS)
+
 demos : ${JARFILE}
 	@echo "Compiling examples..."
-	@mpijavac -cp ${CLASSPATH}:${JARFILE}:${LIBS} $(DEMOS)
+	${CC} ${BASE_FILES} ${DEMOS}
 
 
 dist : ${SRC_DISTRO} ${DEMO_DISTRO}
@@ -121,26 +181,6 @@ indent:
 	find . -name "*.java" -print -exec emacs --batch --load ~/.emacs --eval='(progn (find-file "{}") (mark-whole-buffer) (setq indent-tabs-mode nil) (untabify (point-min) (point-max)) (indent-region (point-min) (point-max) nil) (save-buffer))' \;
 
 
-# All the main GeoMason source files
-BASE_FILES = ./sim/field/geo/GeomField.java		\
-	     ./sim/field/geo/GeomGridField.java			\
-	     ./sim/field/geo/GeomVectorField.java			\
-	     ./sim/io/geo/ArcInfoASCGridImporter.java		\
-	     ./sim/io/geo/ShapeFileImporter.java			\
-	     ./sim/io/geo/ArcInfoASCGridExporter.java		\
-	     ./sim/io/geo/ShapeFileExporter.java			\
-	     ./sim/portrayal/geo/GeomPortrayal.java			\
-	     ./sim/portrayal/geo/GeomVectorFieldPortrayal.java	\
-	     ./sim/portrayal/geo/GeomInfo2D.java			\
-	     ./sim/util/geo/AttributeValue.java			\
-	     ./sim/util/geo/GeometryUtilities.java			\
-	     ./sim/util/geo/GeomPlanarGraph.java			\
-	     ./sim/util/geo/GeomPlanarGraphDirectedEdge.java		\
-	     ./sim/util/geo/GeomPlanarGraphEdge.java			\
-	     ./sim/util/geo/MasonGeometry.java			\
-	     ./sim/util/geo/PointMoveTo.java				\
-	     ./sim/io/geo/ShapeFileExporter.java			
-
 
 # Optional GDAL based importer
 GDAL_FILES = ./sim/io/geo/GDALImporter.java
@@ -157,8 +197,7 @@ ${JARFILE} : $(BASE_FILES) $(GDAL_FILES) $(GEOTOOL_FILES) $(OGR_FILES)
 	@touch /tmp/manifest.add
 	@rm /tmp/manifest.add
 	@echo "Main-Class: sim.display.Console" > /tmp/manifest.add
-	#@echo "Class-Path:  library/*"
-	@javac ${JAVACFLAGS} $^
+	@${CC} ${FLAGS} $^
 	@jar -cvmf /tmp/manifest.add $@ `find sim/app sim/field sim/io sim/portrayal sim/util -name "*.class" -or -name "*.jpg" -or -name "*.png" -or -name "index.html"`
 	@rm /tmp/manifest.add
 

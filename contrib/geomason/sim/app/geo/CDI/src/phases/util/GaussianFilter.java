@@ -1,8 +1,8 @@
-package CDI.src.phases.util;
+package sim.app.geo.CDI.src.phases.util;
 
-import CDI.src.optimization.util.Filter;
-import CDI.src.environment.Cell;
-import CDI.src.environment.Map;
+import sim.app.geo.CDI.src.optimization.util.Filter;
+import sim.app.geo.CDI.src.environment.Cell;
+import sim.app.geo.CDI.src.environment.Map;
 import sim.field.grid.Grid2D;
 import sim.util.*;
 
@@ -13,7 +13,7 @@ import sim.util.*;
  * For the convolution, if there is a missing value for the kernel
  * we simply ignore it and normalize the remain distribution in the kernel to 1
  */
-public class GaussianFilter {
+public class GaussianFilter extends Filter{
 	private double sigma = 0.0;
 	
 	
@@ -32,6 +32,7 @@ public class GaussianFilter {
 
 	public GaussianFilter(int rows, int cols, double sigma)
 	{
+        super(rows, cols);
 		this.rows = rows;
 		this.cols = cols;
 		this.kernel = new double[this.rows][this.cols];

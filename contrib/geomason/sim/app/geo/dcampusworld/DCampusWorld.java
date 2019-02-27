@@ -9,6 +9,8 @@
 */
 package sim.app.geo.dcampusworld;
 
+import sim.app.geo.dcampusworld.data.DCampusWorldData;
+
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -25,12 +27,14 @@ import java.util.logging.Logger;
 
 import sim.engine.Schedule;
 import sim.engine.SimState;
+import sim.engine.DSimState;
 import sim.engine.Steppable;
 import sim.field.DNonUniformPartition;
 import sim.field.DObjectMigratorNonUniform;
 import sim.field.continuous.NContinuous2D;
-import sim.field.geo.GeomNContinuous2D;
-import sim.field.geo.GeomVectorField;
+//import sim.field.geo.GeomNContinuous2D;
+//import sim.field.geo.GeomVectorField;
+import sim.field.geo.*;
 import sim.field.storage.ContStorage;
 import sim.field.storage.TestObj;
 import sim.io.geo.ShapeFileExporter;
@@ -48,7 +52,7 @@ import sim.util.geo.MasonGeometry;
  * roads provides the environment for the agents. During the simulation, the
  * agents wander randomly on the walkways.
  */
-public class DCampusWorld extends SimState
+public class DCampusWorld extends DSimState
 {
 	private static final long serialVersionUID = 1L;
 
@@ -97,8 +101,9 @@ public class DCampusWorld extends SimState
 			masked.add("ADDR_NUM");
 
 			// read in the buildings GIS file
-			URL bldgGeometry = DCampusWorld.class.getResource("data/bldg.shp");
-			ShapeFileImporter.read(bldgGeometry, buildings, masked);
+			URL bldgGeometry = DCampusWorldData.class.getResource("bldg.shp");
+			URL bldgDB = DCampusWorldData.class.getResource("bldg.dbf");
+			ShapeFileImporter.read(bldgGeometry, bldgDB, buildings, masked);
 
 			// We want to save the MBR so that we can ensure that all GeomFields
 			// cover identical area.
@@ -106,15 +111,17 @@ public class DCampusWorld extends SimState
 
 			System.out.println("reading roads layer");
 
-			URL roadGeometry = DCampusWorld.class.getResource("data/roads.shp");
-			ShapeFileImporter.read(roadGeometry, roads);
+			URL roadGeometry = DCampusWorldData.class.getResource("roads.shp");
+			URL roadDB = DCampusWorldData.class.getResource("roads.dbf");
+			ShapeFileImporter.read(roadGeometry, roadDB, roads);
 
 			MBR.expandToInclude(roads.getMBR());
 
 			System.out.println("reading walkways layer");
 
-			URL walkWayGeometry = DCampusWorld.class.getResource("data/walk_ways.shp");
-			ShapeFileImporter.read(walkWayGeometry, walkways);
+			URL walkWayGeometry = DCampusWorldData.class.getResource("walk_ways.shp");
+			URL walkWayDB = DCampusWorldData.class.getResource("walk_ways.dbf");
+			ShapeFileImporter.read(walkWayGeometry, walkWayDB, walkways);
 
 			MBR.expandToInclude(walkways.getMBR());
 

@@ -12,6 +12,8 @@
  **/
 package sim.app.geo.dschellingspace;
 
+import sim.app.geo.dschellingspace.data.DSchellingSpaceData;
+
 import com.vividsolutions.jts.geom.*;
 
 import mpi.MPIException;
@@ -25,6 +27,7 @@ import java.util.Set;
 import sim.app.geo.dcampusworld.DAgent;
 import sim.app.geo.dcampusworld.DCampusWorld;
 import sim.engine.SimState;
+import sim.engine.DSimState;
 import sim.field.DNonUniformPartition;
 import sim.field.DObjectMigratorNonUniform;
 import sim.field.continuous.NContinuous2D;
@@ -40,7 +43,7 @@ import sim.util.geo.MasonGeometry;
 
 
 //@SuppressWarnings("restriction")
-public class DSchellingSpace extends SimState
+public class DSchellingSpace extends DSimState
 {
     private static final long serialVersionUID = 1L;
 
@@ -218,8 +221,9 @@ public class DSchellingSpace extends SimState
         try // to import the data from the shapefile
         {
             System.out.print("Reading boundary data ... ");        
-            URL wardsFile = DSchellingSpace.class.getResource("data/DCreprojected.shp");
-            ShapeFileImporter.read( wardsFile, world, SchellingGeometry.class);
+            URL wardsFile = DSchellingSpaceData.class.getResource("DCreprojected.shp");
+            URL wardsDB = DSchellingSpaceData.class.getResource("DCreprojected.dbf");
+            ShapeFileImporter.read( wardsFile, wardsDB, world, SchellingGeometry.class);
         }
         catch (Exception ex)
         {

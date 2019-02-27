@@ -30,7 +30,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import cityMigration.cityMigrationData.CityMigrationData;
+//import sim.app.geo.cityMigration;
 /**
  * The City Migration model depicts the movement of people who have been displaced.
  * The displaced are moved between cities, which are connected with a spatial interaction network
@@ -340,7 +340,7 @@ public class CityMigrationModel extends SimState
             // Read in population center metadata
 
         	GeomGridField populationGrid = new GeomGridField(); // only used for its MBR
-            InputStream populationStream = CityMigrationData.class.getResourceAsStream("/riftland/riftlandData/PopData/riftpopulation.asc");
+            InputStream populationStream = CityMigrationModel.class.getResourceAsStream("/riftland/riftlandData/PopData/riftpopulation.asc");
             ArcInfoASCGridImporter.read(populationStream, GridDataType.INTEGER, populationGrid);
             populationStream.close();
             MBR = populationGrid.MBR;
@@ -351,7 +351,9 @@ public class CityMigrationModel extends SimState
             URL boundaryFile = getUrl("/riftland/riftlandData/political/RiftLand_Boundary.shp");//politicalBoundariesFile.toURI().toURL();
             if (boundaryFile == null)
                 throw new FileNotFoundException(boundaryFile.toString());
-            ShapeFileImporter.read(boundaryFile, politicalBoundaries);
+            URL boundaryDB = getUrl("/riftland/riftlandData/political/RiftLand_Boundary.dbf");//politicalBoundariesFile.toURI().toURL();
+
+            ShapeFileImporter.read(boundaryFile, boundaryDB, politicalBoundaries);
             
             MBR.expandToInclude(politicalBoundaries.getMBR());
             politicalBoundaries.setMBR(MBR);
@@ -375,7 +377,7 @@ public class CityMigrationModel extends SimState
 		}
 	}
 	private static URL getUrl(String nodesFilename) throws IOException {
-		InputStream nodeStream = CityMigrationData.class.getResourceAsStream(nodesFilename);
+		InputStream nodeStream = CityMigrationModel.class.getResourceAsStream(nodesFilename);
 		try {
 			if (!new File("./shapeFiles/").exists()) {
 				new File("./shapeFiles/").mkdir();
