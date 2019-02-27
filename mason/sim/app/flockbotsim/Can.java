@@ -10,8 +10,12 @@ public class Can extends AbstractObject {
      * It ~bounces~ a little. These are little collectibles for Flockbots to have.
      */
 
+    private Can(World world, BodyDef bdef){
+        super(world, bdef);
+    }
+
     public Can(Vec2 pos, float angle, World world){
-      super(pos, angle, world, BodyType.DYNAMIC);
+        this(world, BodyDefinitionBuilder.setPosition(pos).setAngle(angle).setBodyType(BodyType.DYNAMIC));
     }
     
     @Override

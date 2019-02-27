@@ -8,18 +8,16 @@ import sim.app.flockbotsim.jbox2d.*;
 public class Wall extends AbstractObject{
     /*
      * Made a Wall using AbstractObject
-     * Had to make a hack here because higher order functions are wonky in Java. See AbstractObject.java
      *
      */
     private float size;
-
-    public Wall(Vec2 pos, float size, float angle, World world) { 
-        super(pos, angle, world, BodyType.STATIC, size);
+    
+    private Wall(World world, BodyDef bdef){
+        super(world, bdef).build();
     }
 
-    @Override
-    public void setupObject(float s){
-        setSize(size);
+    public Wall(Vec2 pos, float size, float angle, World world) { 
+        this(world, BodyDefintionBuilder.setPosition(pos).setAngle(angle).setBodyType(BodyType.STATIC).build());
     }
 
     public void setSize(float size){

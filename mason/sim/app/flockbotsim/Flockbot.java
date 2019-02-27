@@ -26,9 +26,12 @@ public class Flockbot extends AbstractObject{
    * Turns out Flockbots are reaaally complicated.
    */
     
+    public Flockbot(World world, BodyDef bdef){
+        super(world, bdef);
+    }
 
     public Flockbot(Vec2 pos, float angle, World world){
-      super(pos, angle, world, BodyType.KINEMATIC);
+        this(world, BodyDefinitionBuilder.newBodyDefBuilder().setBodyType(BodyType.KINEMATIC).setAngle(angle).setPosition(pos));
     }
 
     @Override

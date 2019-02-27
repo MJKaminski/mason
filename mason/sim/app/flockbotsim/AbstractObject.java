@@ -7,61 +7,71 @@ import org.jbox2d.common.*;
 import org.jbox2d.dynamics.*;
 
 public abstract class AbstractObject {
-  /*
-   * All objects that interact in the simulation need to extend from this, it'll make it easier.
-   * At least make something like this to give everything equal gravity etc.
-   * Basically you're defining two fields, Body body and BodyDef bdef, to define how your object should interact in space.
-   * After that, you create the fixture to actually give it a physical presence in that space.
-   * 
-   * While mostly written soundly, there's one hack in here. In the constructor,
-   * you define the BodyDef first and then create the body. After that you create the fixture.
-   * You can override setupObject to to any extra setup that needs to be done inbetween. It currently takes a float,
-   * because I needed it for Wall.java specifically. Please make a better hack. - hatfolk
-   */
-  private Body body;
-  private BodyDef bdef;
+    /*
+     * All objects that interact in the simulation need to extend from this, it'll make it easier.
+     * At least make something like this to give everything equal gravity etc.
+     * Basically you're defining two fields, Body body and BodyDef bdef, to define how your object should interact in space.
+     * After that, you create the fixture to actually give it a physical presence in that space.
+     *
+     * This supports direct extension or a Builder pattern.
+     * 
+     */
+    private Body body;
+    private BodyDefinitionBuilder bdef = BodyDefinitionBuilder.newBodyDefBuilder().setLinearDamping(1.0f).setAngularDamping(1.5f);
+    private World world;
 
-    public AbstractObject(Vec2 pos, float angle, World world, BodyType bodyType) throws IllegalArgumentException{
-        this(pos, angle, world, bodyType, 0); // eh
+
+    public AbstractObject(World world, BodyDef bdef){
+        body = world.createBody(bdef);
+        makeFixture();
     }
-    public AbstractObject(Vec2 pos, float angle, World world, BodyType bodyType, float s) throws IllegalArgumentException{
-        bdef = new BodyDef();
+
+    public abstract void makeFixture(); // Force each object to create their own fixture.
+
+    public AbstractObject setPosition(Vec2 pos){
+        bdef = bdef.setPosition(pos);
+        return this;
+    }
+
+    public AbstractObject setAngle(float angle){
+        bdef = bdef.setAngle(angle);
+        return this;
+    }
+
+    public AbstractObject setWorld(World world){
+        this.world = world;
+        return this;
+    }
+
+    public AbstractObject setBodyType(BodyType bodyType) throws IllegalArgumentException{
         if(EnumSet.allOf(BodyType.class).contains(bodyType)){
-            bdef.type = bodyType;
+            bdef = bdef.setBodyType(bodyType);
         } else {
             throw new IllegalArgumentException("BodyType error, value " + bodyType);
         }
-        bdef.angle = angle;
-        bdef.linearDamping = 1.0f;
-        bdef.angularDamping = 1.5f;
-        bdef.position.set(pos);
-        body = world.createBody(bdef);
+        return this;
+    }
 
-        setupObject(s);
+    public AbstractObject build() throws NullPointerException{
+        body = world.createBody(bdef.build());
         makeFixture();
+        return this;
     }
-    
-    public abstract void makeFixture(); // Force each object to create their own fixture.
-
-    public void setupObject(float s){
-        // hax
-    }
-
 
     //get methods
     public BodyDef getBodyDef(){
-      return bdef;
+        return bdef.build();
     }
     public Body getBody(){
-      return body;
+        return body;
     }
     //modifier set methods
     public void setBody(Body b){
-      body = b;
-      makeFixture();
+        body = b;
+        makeFixture();
     }
     public void setVelocity(Vec2 vec){
-      body.setLinearVelocity(vec);
+        body.setLinearVelocity(vec);
     }
 
 }
